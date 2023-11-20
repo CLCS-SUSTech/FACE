@@ -86,35 +86,10 @@ def fp_pipeline(data_file, method, n_samples=np.inf, normalize=False) -> pd.Data
     })
     return df
 
-def run_gpt2_old():
-    data_dir = '../data/data_gpt2_old/'
-    input_files = [
-       'large-762M.test.model=gpt2.nll',
-    ]
-    # FFT, not normalized
-    for input_file in input_files:
-        df = fp_pipeline(data_dir + input_file, 'fft', normalize=False)
-        output_file = data_dir + input_file[:-4] + '.fft.csv'
-        df.to_csv(output_file, index=False)
 
-def run_bloomz_560m():
-    data_dir = '../data/data_bloomz_560m/'
-    input_files = ['webtext.train.model=.bloom_560m.news.nll',
-                   'webtext.train.model=.bloom_560m.story.nll',
-                   'webtext.train.model=.bloom_560m.wiki.nll']
-    # FFT, not normalized
-    for input_file in input_files:
-        df = fp_pipeline(data_dir + input_file, 'fft', normalize=False)
-        output_file = data_dir + input_file[:-4] + '.fft.csv'
-        df.to_csv(output_file, index=False)
-
-def run_webtext_old():
-    data_dir = '../data/data_gpt2_old/'
-    input_files = ['webtext.test.model=gpt2.nll',
-                   'webtext.test.model=gpt2-medium.nll',
-                   'webtext.test.model=gpt2-large.nll',
-                   'webtext.test.model=gpt2-xl.nll']
-    # FFT, not normalized
+def demo():
+    data_dir = 'data/'
+    input_files = ['demo_human.nll', 'demo_model.nll']
     for input_file in input_files:
         df = fp_pipeline(data_dir + input_file, 'fft', normalize=False)
         output_file = data_dir + input_file[:-4] + '.fft.csv'
@@ -122,6 +97,4 @@ def run_webtext_old():
 
 
 if __name__ == '__main__':
-    run_gpt2_old()
-    # run_bloomz_560m()
-    # run_webtext_old()
+    demo()
