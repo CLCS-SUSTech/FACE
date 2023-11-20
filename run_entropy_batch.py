@@ -11,60 +11,47 @@ import numpy as np
 
 def create_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', '-d', type=str, default='data/', help='data dir') 
-    parser.add_argument('--source', type=str, choices=[
-        'webtext',
-        'small-117M',  'small-117M-k40',
-        'medium-345M', 'medium-345M-k40',
-        'large-762M',  'large-762M-k40',
-        'xl-1542M',    'xl-1542M-k40',
-    ])
-    parser.add_argument('--split', type=str, choices=['train', 'test', 'valid'])
+    parser.add_argument('--input', '-i', type=str, default='', 
+                        help='input file', required=True)
+    parser.add_argument('--output',
+                        '-o',
+                        type=str,
+                        default='',
+                        help='output file')
+    parser.add_argument(
+        '--model',
+        type=str,
+        default='gpt2',
+        choices=['gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'],
+        help=
+        'if specified, this model will be used for estimating the entropy \
+            (negative log-likelihood output) in replace of the default models'
+    )
+    parser.add_argument('--model_path', type=str, default='', help='load model locally if specified')
     parser.add_argument('--batch_size', '-bs', type=int, default=32)
     parser.add_argument('--start_batch', type=int, default=0)
-    parser.add_argument('--input', '-i', type=str, default='', help='input file; if specified, --source and --split will be ignored')
-    parser.add_argument('--output', '-o', type=str, default='', help='output file or dir')
-    parser.add_argument('--device_id', type=int, default=0)
-    parser.add_argument('--model', type=str, default='', choices=['gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'], 
-                        help='if specified, this model will be used for estimating the NLL in replace of the default models')
     return parser
 
-def _load_split(data_dir, source, split, n=np.inf):
-    path = os.path.join(data_dir, f'{source}.{split}.jsonl')
-    texts = []
-    for i, line in enumerate(open(path)):
-        if i >= n:
-            break
-        texts.append(json.loads(line)['text'])
-    return texts
 
 def load_model(args):
-    model_class = GPT2LMHeadModel
-    tokenizer_class = GPT2Tokenizer
-    if args.source == 'webtext':
-        pretrained_weights = 'gpt2'
-    elif args.source.startswith('small'):
-        pretrained_weights = 'gpt2'
-    elif args.source.startswith('medium'):
-        pretrained_weights = 'gpt2-medium'
-    elif args.source.startswith('large'):
-        pretrained_weights = 'gpt2-large'
-    elif args.source.startswith('xl'):
-        pretrained_weights = 'gpt2-xl'
-    
-    if args.model:
-        pretrained_weights = args.model
-
-    model = model_class.from_pretrained(pretrained_weights)
-    tokenizer = tokenizer_class.from_pretrained(pretrained_weights)
+    if len(args.model_path)>0:
+        model_path = args.model_path
+        model = GPT2LMHeadModel.from_pretrained(model_path)
+        tokenizer = GPT2Tokenizer(tokenizer_file=os.path.join(model_path, 'tokenizer.json'),
+                                  vocab_file=os.path.join(model_path, 'vocab.json'),
+                                  merges_file=os.path.join(model_path, 'merges.txt'))
+    else:
+        model_path = args.model
+        model = GPT2LMHeadModel.from_pretrained(model_path)
+        tokenizer = GPT2Tokenizer.from_pretrained(model_path)
     tokenizer.pad_token = tokenizer.eos_token
-
     if torch.cuda.is_available():
-        device = torch.device(f'cuda:{args.device_id}')
+        device = torch.device('cuda')
+    elif torch.backends.mps.is_available():
+        device = torch.device('mps')
     else:
         device = torch.device('cpu')
     model.to(device)
-
     return model, tokenizer
 
 
@@ -75,21 +62,16 @@ def process(model, tokenizer, args):
     criterian = nn.NLLLoss(reduction='none')
     log_softmax = nn.LogSoftmax(dim=1)
 
-    if len(args.input) > 0:
-        data = [line.strip() for line in open(args.input)]
-    else:
-        data = _load_split('data', source=args.source, split=args.split)
-
-    if len(args.output) > 0:
-        output_file = args.output
-    elif len(args.input) > 0:
-        output_file = os.path.join(
-            args.data_dir,
-            f'{args.input}.model={args.model}.nll')
-    else:
-        output_file = os.path.join(
-            args.data_dir,
-            f'{args.source}.{args.split}.model={args.model}.nll')
+    with open(args.input, 'r') as fr:
+        data = [line.strip() for line in fr.readlines()]
+        if len(args.output) > 0:
+            output_file = args.output
+        else:
+            if args.model_path:
+                model_name = os.path.basename(args.model_path)
+                output_file = f'{args.input}.model={model_name}.nll'
+            else:
+                output_file = f'{args.input}.model={args.model}.nll'
 
     num_batches = len(data) // args.batch_size
     if len(data) % args.batch_size > 0:
@@ -99,9 +81,8 @@ def process(model, tokenizer, args):
             batch = data[i*args.batch_size: (i*args.batch_size+args.batch_size)]
             if len(batch) == 0:
                 continue
-            
             try:
-                encoded_input = tokenizer(batch, return_tensors='pt', padding='max_length', truncation=True).to(device)
+                encoded_input = tokenizer(batch, return_tensors='pt', padding=True, truncation=True).to(device)
             except Exception:
                 raise
             input_ids = encoded_input['input_ids']
