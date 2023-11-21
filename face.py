@@ -1,10 +1,16 @@
-from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
 from scipy import interpolate
 from scipy.stats import pearsonr
 from scipy.stats import spearmanr
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--human', type=str, required=True)
+parser.add_argument('--model', type=str, required=True)
+parser.add_argument('--output', type=str, default='', help='output to stdout if not specified')
+parser.add_argument('--demo', action='store_true', help='run demo')
 
 
 # Get the basises for interpolation
@@ -46,6 +52,11 @@ def alignPoints(filepath1: str, filepath2: str):
         x = np.linspace(0, 0.5, 1000)
         y1 = func1(x)
         y2 = func2(x)
+        try:
+            assert len(x) == len(y1) == len(y2)
+        except AssertionError:
+            print(f'Error in sample {i}: x of shape {x.shape}, y1 of shape {y1.shape}, y2 of shape {y2.shape}')
+            raise
         y1listlist.append(y1)
         y2listlist.append(y2)
 
@@ -96,7 +107,37 @@ def getPearson(filepath1: str, filepath2: str):
     for i in range(len(y1listlist)):
         y1list = y1listlist[i]
         y2list = y2listlist[i]
-        corr, _ = pearsonr(y1list, y2list)
+        y1 = np.array(y1list)
+        y2 = np.array(y2list)
+        y1_ninf = len(y1[np.isfinite(y1)])
+        y2_ninf = len(y2[np.isfinite(y2)])
+        if y1_ninf != y2_ninf:
+            # replace inf with mean (after removing max)
+            max_mask = y1 == np.nanmax(y1)
+            inf_mask = np.logical_not(np.isfinite(y1))
+            nan_mask = np.isnan(y1)
+            exclude_mask = np.logical_or(max_mask, inf_mask, nan_mask)
+            y1_ma = np.ma.array(y1, mask=exclude_mask)
+            y2_ma = np.ma.array(y2, mask=exclude_mask)
+            y1[inf_mask] = y1_ma.mean()
+            y1[nan_mask] = y1_ma.mean()
+            y2[inf_mask] = y2_ma.mean()
+            y2[nan_mask] = y2_ma.mean()
+            try:
+                assert len(y1[np.isfinite(y1)])==len(y1)
+            except AssertionError:
+                print(f'Error in sample {i}: y1 {y1}')
+                raise
+            try:
+                assert len(y2[np.isfinite(y2)])==len(y2)
+            except AssertionError:
+                print(f'Error in sample {i}: y2 {y2}')
+                raise
+        try:
+            corr, _ = pearsonr(y1, y2)
+        except ValueError:
+            print(f'Error in sample {i}: y1 of shape {y1.shape}, y2 of shape {y2.shape}')
+            raise
         corr_list.append(corr)
     return corr_list
 
@@ -125,11 +166,26 @@ def getSAM(filepath1: str, filepath2: str):
     return sam_list
 
 
-##
-# Demo example
-##
 def demo():
     pass
 
+def main(args):
+    human_file = args.human
+    model_file = args.model
+    _, _, SO_list = getSO(human_file, model_file)
+    CORR_list = getPearson(human_file, model_file)
+    SAM_list = getSAM(human_file, model_file)
+    SPEAR_list = getSpearmanr(human_file, model_file)
+
+    df = DataFrame({'SO': SO_list, 'CORR': CORR_list, 'SAM': SAM_list, 'SPEAR': SPEAR_list})
+    if len(args.output) > 0:
+        df.to_csv(args.output, index=False)
+    else:
+        print(df.describe())
+
 if __name__ == '__main__':
-    demo()
+    args = parser.parse_args()
+    if args.demo:
+        demo()
+    else:
+        main(args)

@@ -14,6 +14,7 @@ parser.add_argument('--output',
                     help='output file or dir')
 parser.add_argument('--N', type=int, default=np.inf, help='number of samples')
 parser.add_argument('--method', type=str, default='fft', choices=['periodogram', 'fft'])
+parser.add_argument('--demo', action='store_true', help='run demo')
 
 
 def _read_data(data_file, N=np.inf):
@@ -31,6 +32,7 @@ def _read_data(data_file, N=np.inf):
                 break
     return data
 
+# Periodogram method (with smoothing window)
 def compute_periodogram(data):
     freqs, powers = [], []
     for i in tqdm.tqdm(range(len(data))):
@@ -39,6 +41,7 @@ def compute_periodogram(data):
         powers.append(p)
     return freqs, powers
 
+# Raw FFT method
 def compute_fft(data):
     freqs, powers = [], []
     for i in tqdm.tqdm(range(len(data))):
@@ -46,7 +49,7 @@ def compute_fft(data):
         try:
             N = x.shape[-1]
             freq_x = fftshift(fftfreq(N))
-            sp_x = fftshift(fft(x)).real
+            sp_x = fftshift(fft(x)).real # take the real part
         except Exception:
             print(f'Error in sample {i}: {x}')
             raise
@@ -55,7 +58,7 @@ def compute_fft(data):
     return freqs, powers
 
 
-def fp_pipeline(data_file, method, n_samples=np.inf, normalize=False) -> pd.DataFrame:
+def fft_pipeline(data_file, method, n_samples=np.inf, normalize=False) -> pd.DataFrame:
     """
     :param data_file:
     :param method:
@@ -89,12 +92,20 @@ def fp_pipeline(data_file, method, n_samples=np.inf, normalize=False) -> pd.Data
 
 def demo():
     data_dir = 'data/'
-    input_files = ['demo_human.nll', 'demo_model.nll']
+    input_files = ['demo_human.nll.txt', 'demo_model.nll.txt']
     for input_file in input_files:
-        df = fp_pipeline(data_dir + input_file, 'fft', normalize=False)
-        output_file = data_dir + input_file[:-4] + '.fft.csv'
+        df = fft_pipeline(data_dir + input_file, 'fft', normalize=False)
+        output_file = data_dir + input_file[:-4] + '.fft.txt'
         df.to_csv(output_file, index=False)
+
+def main(args):
+    df = fft_pipeline(args.input, args.method, n_samples=args.N, normalize=False)
+    df.to_csv(args.output, index=False)
 
 
 if __name__ == '__main__':
-    demo()
+    args = parser.parse_args()
+    if args.demo:
+        demo()
+    else:
+        main(args)
