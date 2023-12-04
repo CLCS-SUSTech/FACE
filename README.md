@@ -43,7 +43,7 @@ freq,power
 ```console
 python face.py --human data/demo_human.fft.txt --model data/demo_model.fft.txt --output data/demo_face.csv
 ```
-If no `--output` argument is not specified, then the summarized scores will be printed to stdout, as shown below:
+If `--output` argument is not specified, then the summarized scores will be printed to stdout, as shown below:
 ```console
                SO        CORR         SAM       SPEAR
 count  991.000000  993.000000  991.000000  991.000000
@@ -55,3 +55,9 @@ min      0.137400    0.069470    0.144674   -0.279865
 75%      0.418000    0.794785    0.318524    0.050299
 max      0.499800    0.898501    0.466583    0.376582
 ```
+
+## Visualization
+Run `plot/sample.R` to plot the aggregated and smoothed spectra in `demo_human.fft.txt` and `demo_model.fft.txt`, as shown below:
+
+<!-- ![demo](./plot/demo_spectrum_smoothed.png) -->
+<img src="plot/demo_spectrum_smoothed.png" width=70%>
