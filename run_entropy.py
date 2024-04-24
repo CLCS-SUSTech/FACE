@@ -1,11 +1,13 @@
 import argparse
 import os
+import json
 import torch
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from tqdm import tqdm
 import torch.nn as nn
 import numpy as np
 from einops import rearrange
+from config import load_config
 
 
 def create_parser():
@@ -27,7 +29,15 @@ def create_parser():
             (negative log-likelihood output) in replace of the default models'
     )
     parser.add_argument('--model_path', type=str, default='', help='load model locally if specified')
+
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="path to the configuration file"
+    )
     return parser
+
 
 def load_model(args):
     if len(args.model_path)>0:
@@ -103,8 +113,23 @@ def process(model, tokenizer, args):
                 fw.write(f'{res_str}\n')
 
 
+def run_from_config(args):
+    from model import ModelNoPrompt
+    model = ModelNoPrompt(args.model_est)
+    json_data = json.loads(open(args.data, "r").read())
+    text_data = json_data["original"]
+    results = []
+    for text in tqdm(text_data):
+        probs = model.forward(text)
+        results.append(-torch.log(probs).numpy().tolist())
+
+
 if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
-    model, tokenizer = load_model(args)
-    process(model, tokenizer, args)
+    if args.config is not None:
+        args = load_config()
+        run_from_config(args)
+    else:
+        model, tokenizer = load_model(args)
+        process(model, tokenizer, args)

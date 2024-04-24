@@ -1,0 +1,13 @@
+{
+    "args": [
+        "--model_est", "/data1/model/mistral-7b-base/",
+        "--thread", 4,
+
+        "--data", "./data/gpt-4/writing_gpt-4.raw_data.txt",
+        "--data_size", 1000,
+
+        "--est_token_length", 768,
+        "--est_save_path", "./result",
+        "--est_save_stepwise"
+    ]
+}
