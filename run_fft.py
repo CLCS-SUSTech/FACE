@@ -14,6 +14,7 @@ parser.add_argument('--output',
                     help='output file or dir')
 parser.add_argument('--N', type=int, default=np.inf, help='number of samples')
 parser.add_argument('--method', type=str, default='fft', choices=['periodogram', 'fft'])
+parser.add_argument('--norm', action='store_true', help='normalize data before FFT')
 parser.add_argument('--demo', action='store_true', help='run demo')
 
 
@@ -99,7 +100,7 @@ def demo():
         df.to_csv(output_file, index=False)
 
 def main(args):
-    df = fft_pipeline(args.input, args.method, n_samples=args.N, normalize=False)
+    df = fft_pipeline(args.input, args.method, n_samples=args.N, normalize=args.norm)
     df.to_csv(args.output, index=False)
 
 
