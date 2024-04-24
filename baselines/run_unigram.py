@@ -1,5 +1,10 @@
 from collections import Counter
+import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--input', '-i', type=str, required=True)
+parser.add_argument('--output', '-o', type=str, required=True)
+parser.add_argument('--min_count', type=int, default=3)
 
 def tokenizer(text: str) -> list[str]:
     return text.strip().split()
@@ -42,3 +47,7 @@ def main(args):
                 else:
                     probs.append(freqs['[UNK]'] / total_freq)
             f.write(' '.join(f'{p:.4f}' for p in probs) + '\n')
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+    main(args)

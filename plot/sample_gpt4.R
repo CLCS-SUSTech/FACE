@@ -1,18 +1,6 @@
 require("ggplot2")
 require("data.table")
 
-# Unnormalized data
-d.human <- fread("../data/demo_human.fft.txt")
-d.gpt4 <- fread("../data/gpt-4/writing_gpt-4.gpt2.fft.txt")
-d.gpt3.5 <- fread("../data/gpt-3.5/writing_gpt-3.5-turbo.gpt2.fft.txt")
-d.davinci <- fread("../data/davinci/writing_davinci.gpt2.fft.txt")
-
-# Normalized data
-d.human <- fread("../data/demo_human.fftnorm.txt")
-d.gpt4 <- fread("../data/gpt-4/writing_gpt-4.gpt2.fftnorm.txt")
-d.gpt3.5 <- fread("../data/gpt-3.5/writing_gpt-3.5-turbo.gpt2.fftnorm.txt")
-d.davinci <- fread("../data/davinci/writing_davinci.gpt2.fftnorm.txt")
-
 
 # Add sequence ID
 add_sid <- function(dt) {
@@ -23,110 +11,81 @@ add_sid <- function(dt) {
   dt
 }
 
-d.human <- add_sid(d.human)
-d.gpt4 <- add_sid(d.gpt4)
-d.gpt3.5 <- add_sid(d.gpt3.5)
-d.davinci <- add_sid(d.davinci)
-
-# Add type column
-d.human$type <- "human"
-d.gpt4$type <- "gpt-4"
-d.gpt3.5$type <- "gpt-3.5"
-d.davinci$type <- "davinci"
-d.combined <- rbind(d.human, d.gpt4, d.gpt3.5, d.davinci)
-
-# Smoothed plot
-p <- ggplot(d.combined, aes(freq, power, color=type)) +
-    geom_smooth() +
-    theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
-    ggtitle("Human vs. Model") +
-    labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
-ggsave("gpt4_human_writing_spectrum_smoothed_norm.pdf", plot=p, width=5, height=5)
-
-# Plot gpt-4, gpt-3.5, davinci
-p <- ggplot(d.combined[type!="human"], aes(freq, power, color=type)) +
-    geom_smooth() + 
-    theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
-    ggtitle("GPT-4 vs. GPT-3.5 vs. Davinci") +
-    labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
-ggsave("gpt4_gpt3.5_davinci_writing_spectrum_smoothed_norm.pdf", plot=p, width=5, height=5)
-
-
-# Plot gpt-4, gpt-3.5, davinci with a poor model (gpt2)
-d.gpt2 <- fread("../data/demo_model.fftnorm.txt")
-d.gpt2 <- add_sid(d.gpt2)
-d.gpt2$type <- "gpt-2"
-d.combined2 <- rbind(d.gpt4, d.gpt3.5, d.davinci, d.gpt2)
-
-p <- ggplot(d.combined2, aes(freq, power, color=type)) +
-    geom_smooth() + 
-    theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
-    ggtitle("GPT-4 vs. GPT-3.5 vs. Davinci vs. GPT-2") +
-    labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
-ggsave("gpt4_gpt3.5_davinci_gpt2_writing_spectrum_smoothed_norm.pdf", plot=p, width=5, height=5)
-
-
-# Plot gpt-2 and human together
-d.combined3 <- rbind(d.human, d.gpt2)
-p <- ggplot(d.combined3, aes(freq, power, color=type)) +
-    geom_smooth() + 
-    theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
-    ggtitle("Human vs. GPT-2") +
-    labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
-ggsave("human_gpt2_writing_spectrum_smoothed_norm.pdf", plot=p, width=5, height=5)
-
-
 ##
 # GPT2xl as estimator
-d.human <- fread("../data/demo_human.gpt2xl.fftnorm.txt")
-d.gpt4 <- fread("../data/gpt-4/writing_gpt-4.gpt2xl.fftnorm.txt")
-d.gpt3.5 <- fread("../data/gpt-3.5/writing_gpt-3.5-turbo.gpt2xl.fftnorm.txt")
-d.davinci <- fread("../data/davinci/writing_davinci.gpt2xl.fftnorm.txt")
+##
 
-d.human <- add_sid(d.human)
-d.gpt4 <- add_sid(d.gpt4)
-d.gpt3.5 <- add_sid(d.gpt3.5)
-d.davinci <- add_sid(d.davinci)
-
-# Add type column
-d.human$type <- "human"
-d.gpt4$type <- "gpt-4"
-d.gpt3.5$type <- "gpt-3.5"
-d.davinci$type <- "davinci"
-d.combined <- rbind(d.human, d.gpt4, d.gpt3.5, d.davinci)
-
+# GPT-4
+d.gpt4.orig <- fread("../data/gpt-4/writing_gpt-4.original.gpt2xl.fftnorm.txt")
+d.gpt4.samp <- fread("../data/gpt-4/writing_gpt-4.sampled.gpt2xl.fftnorm.txt")
+d.gpt4.orig <- add_sid(d.gpt4.orig)
+d.gpt4.samp <- add_sid(d.gpt4.samp)
+d.gpt4.orig$type <- "Human"
+d.gpt4.samp$type <- "GPT-4"
+d.gpt4 <- rbind(d.gpt4.orig, d.gpt4.samp)
 # Smoothed plot
-p <- ggplot(d.combined, aes(freq, power, color=type)) +
+p <- ggplot(d.gpt4, aes(freq, power, color=type)) +
     geom_smooth() +
     theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
-    ggtitle("Human vs. Model") +
+    ggtitle("Human vs. GPT-4") +
     labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
 ggsave("gpt4_human_writing_gpt2xl_norm.pdf", plot=p, width=5, height=5)
 
-# Plot gpt-4, gpt-3.5, davinci
-p <- ggplot(d.combined[type!="human"], aes(freq, power, color=type)) +
-    geom_smooth() + 
-    theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
-    ggtitle("GPT-4 vs. GPT-3.5 vs. Davinci") +
-    labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
-ggsave("gpt4_gpt3.5_davinci_writing_gpt2xl_norm.pdf", plot=p, width=5, height=5)
-
-
-# davinci alone
-# GPT2xl as estimator
-p <- ggplot(d.combined[type=="davinci"], aes(freq, power, color=type)) +
+# GPT3.5
+d.gpt3.5.orig <- fread("../data/gpt-3.5/writing_gpt-3.5-turbo.original.gpt2xl.fftnorm.txt")
+d.gpt3.5.samp <- fread("../data/gpt-3.5/writing_gpt-3.5-turbo.sampled.gpt2xl.fftnorm.txt")
+d.gpt3.5.orig <- add_sid(d.gpt3.5.orig)
+d.gpt3.5.samp <- add_sid(d.gpt3.5.samp)
+d.gpt3.5.orig$type <- "Human"
+d.gpt3.5.samp$type <- "GPT-3.5"
+d.gpt3.5 <- rbind(d.gpt3.5.orig, d.gpt3.5.samp)
+# Smoothed plot
+p <- ggplot(d.gpt3.5, aes(freq, power, color=type)) +
     geom_smooth() +
     theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
-    ggtitle("Davinci") +
+    ggtitle("Human vs. GPT-3.5") +
     labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
-ggsave("davinci_writing_gpt2xl_norm.pdf", plot=p, width=5, height=5)
-# GPT2 as estimator
-d.davinci <- fread("../data/davinci/writing_davinci.gpt2.fftnorm.txt")
-d.davinci <- add_sid(d.davinci)
-d.davinci$type <- "davinci"
+ggsave("gpt3.5_human_writing_gpt2xl_norm.pdf", plot=p, width=5, height=5)
+
+# Davinci
+d.davinci.orig <- fread("../data/davinci/writing_davinci.original.gpt2xl.fftnorm.txt")
+d.davinci.samp <- fread("../data/davinci/writing_davinci.sampled.gpt2xl.fftnorm.txt")
+d.davinci.orig <- add_sid(d.davinci.orig)
+d.davinci.samp <- add_sid(d.davinci.samp)
+d.davinci.orig$type <- "Human"
+d.davinci.samp$type <- "Davinci"
+d.davinci <- rbind(d.davinci.orig, d.davinci.samp)
+# Smoothed plot
 p <- ggplot(d.davinci, aes(freq, power, color=type)) +
     geom_smooth() +
     theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
-    ggtitle("Davinci") +
+    ggtitle("Human vs. Davinci") +
     labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
-ggsave("davinci_writing_gpt2_norm.pdf", plot=p, width=5, height=5)
+ggsave("davinci_human_writing_gpt2xl_norm.pdf", plot=p, width=5, height=5)
+
+# Plot GPT-4, GPT-3.5, Davinci, and Human (from GPT-4 and 3.5) together
+d.all <- rbind(d.gpt4, d.gpt3.5, d.davinci.samp)
+p <- ggplot(d.all, aes(freq, power, color=type)) +
+    geom_smooth() +
+    theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
+    ggtitle("Human vs. GPT-4 vs. GPT-3.5 vs. Davinci") +
+    labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
+ggsave("all_human_writing_gpt2xl_norm.pdf", plot=p, width=5, height=5)
+
+# Plot GPT-4, GPT-3.5, and Human (from GPT-4 and 3.5) together
+d.gpts <- rbind(d.gpt4, d.gpt3.5)
+p <- ggplot(d.gpts, aes(freq, power, color=type)) +
+    geom_smooth() +
+    theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
+    ggtitle("Human vs. GPT-4 vs. GPT-3.5") +
+    labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
+ggsave("gpts_human_writing_gpt2xl_norm.pdf", plot=p, width=5, height=5)
+
+# GPT2 from demo
+d.gpt2.orig <- fread("../data/demo_human.gpt2xl.fftnorm.txt")
+d.gpt2.samp <- fread("../data/demo_model.gpt2xl.fftnorm.txt")
+
+
+##
+# GPT2 (small) as estimator
+##

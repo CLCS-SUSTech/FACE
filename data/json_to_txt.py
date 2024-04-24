@@ -1,4 +1,5 @@
 import json
+import re
 
 def json_to_txt(json_path, orig_txt_path, samp_txt_path):
     with open(json_path, 'r') as f:
@@ -8,6 +9,9 @@ def json_to_txt(json_path, orig_txt_path, samp_txt_path):
             f.write(line + '\n')
     with open(samp_txt_path, 'w') as f:
         for line in data["sampled"]:
+            line = line.strip()
+            # replace "\n"s with " "
+            line = re.sub(r'[\n]+', ' ', line)
             f.write(line + '\n')
 
 json_to_txt('./gpt-4/writing_gpt-4.raw_data.json', 

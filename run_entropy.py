@@ -86,7 +86,12 @@ def process(model, tokenizer, args):
                                       return_tensors='pt').to(device)
             input_ids = encoded_input['input_ids']
 
-            output = model(**encoded_input, labels=input_ids)
+            try:
+                output = model(**encoded_input, labels=input_ids)
+            except Exception:
+                print('line:', line)
+                print('input_ids:', input_ids)
+                raise
             logits = output.logits.to(device)
             target = encoded_input['input_ids'].to(device)
 
