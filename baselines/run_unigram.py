@@ -1,5 +1,6 @@
 from collections import Counter
 import argparse
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--input', '-i', type=str, required=True)
@@ -25,12 +26,14 @@ def build_vocab(data: list[list[str]], min_count=3):
     freqs = Counter()
     for line in data:
         freqs.update(line)
+    unk_count = 0
     for word, count in freqs.items():
         if count >= min_count:
             word2id[word] = len(word2id)
             id2word[word2id[word]] = word
         else:
-            freqs['[UNK]'] += count
+            unk_count += count
+    freqs['[UNK]'] = unk_count
     return word2id, id2word, freqs
 
 def main(args):
@@ -40,13 +43,14 @@ def main(args):
     
     with open(args.output, 'w') as f:
         for d in data:
-            probs = []
+            nlls = []
             for word in d:
-                if word2id[word] != 0:
-                    probs.append(freqs[word] / total_freq)
+                if word in word2id:
+                    prob = freqs[word] / total_freq
                 else:
-                    probs.append(freqs['[UNK]'] / total_freq)
-            f.write(' '.join(f'{p:.4f}' for p in probs) + '\n')
+                    prob = freqs['[UNK]'] / total_freq
+                nlls.append(-np.log(prob))
+            f.write(' '.join(f'{val:.4f}' for val in nlls) + '\n')
 
 if __name__ == '__main__':
     args = parser.parse_args()
