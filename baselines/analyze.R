@@ -86,9 +86,22 @@ t.test(fftnorm.gpt4.orig[,power], fftnorm.gpt4.samp[,power]) # Not distinguishab
 t.test(fftnorm.gpt4.orig[freq==0,power], fftnorm.gpt4.samp[freq==0,power]) # Not distinguishable
 # t = 1.2774e-14, df = 296.16, p-value = 1
 
-t.test(fftnorm.gpt4.orig[between(freq, 0, 0.01),power], fftnorm.gpt4.samp[between(freq, 0, 0.01),power]) # Distinguishable
+t.test(fftnorm.gpt4.orig[between(freq, 0, 0.01),power],
+       fftnorm.gpt4.samp[between(freq, 0, 0.01),power]) # Distinguishable
 # t = -2.1774, df = 597.3, p-value = 0.02984
 
-t.test(fftnorm.gpt4.orig[between(freq, 0, 0.02),power], fftnorm.gpt4.samp[between(freq, 0, 0.02),power]) # Not distinguishable
+t.test(fftnorm.gpt4.orig[between(freq, 0.01, 0.02),power], 
+       fftnorm.gpt4.samp[between(freq, 0.01, 0.02),power]) #ND 
 
-t.test(fftnorm.gpt4.orig[between(freq, 0.06, 0.075),power], fftnorm.gpt4.samp[between(freq, 0.06, 0.075),power]) # Not distinguishable
+t.test(fftnorm.gpt4.orig[between(freq, 0, 0.02),power], 
+       fftnorm.gpt4.samp[between(freq, 0, 0.02),power]) # Not distinguishable
+t.test(fftnorm.gpt4.orig[between(freq, 0.06, 0.075),power], 
+       fftnorm.gpt4.samp[between(freq, 0.06, 0.075),power]) # Not distinguishable
+
+# Plot FFT normalized power at freq between 0 and 0.01
+p <- ggplot(fftnorm.gpt4[between(freq, 0, 0.01),], aes(power, fill=type)) +
+    geom_density(alpha=0.5) +
+    theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
+    ggtitle("Human vs. GPT-4 (0-0.01)") +
+    labs(x = "FFT Normalzied Power", y = "Density")
+ggsave("gpt4_human_writing_fftnormdistr_0-0.01_unigram_mincount=3.pdf", plot=p, width=5, height=5)
