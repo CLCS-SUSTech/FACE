@@ -1,6 +1,17 @@
 require("ggplot2")
 require("data.table")
 require("mgcv") # For fitting GAM
+require("lsa") # For computing cosine similarity
+
+
+# Add sequence ID
+add_sid <- function(dt) {
+    dt[, freq2 := shift(freq, 1, type="lead", fill=0.5)]
+    dt$diffSeries <- dt$freq > dt$freq2
+    dt$sid <- cumsum(dt$diffSeries)
+    dt$sid <- shift(dt$sid, 1, type="lag", fill=0)
+    dt
+}
 
 
 # The function that returns predictions from GAM model
@@ -98,3 +109,46 @@ p <- ggplot(pred.all, aes(x, y)) +
     labs(x = bquote(omega[k]), y = bquote(X(omega[k])))+ 
     theme_bw()
 ggsave("gam_all_human_writing_fftnorm.pdf", plot=p, width=5, height=5)
+
+
+# Measure distance between predicted y (power) and ground truth
+# human => 0, model => 1
+d.gpt4.orig <- add_sid(d.gpt4.orig)
+count.00 <- 0
+count.01 <- 0
+for (i in unique(d.gpt4.orig$sid)) {
+    d.tmp <- d.gpt4.orig[sid == i]
+    y <- d.gpt4.orig[sid == i]$power
+    y_pred_orig <- predict.gam(gam.gpt4.orig, d.tmp)
+    y_pred_orig <- as.numeric(y_pred_orig)
+    y_pred_orig <- y_pred_orig * sd(gam.gpt4.orig$y) + mean(gam.gpt4.orig$y)
+    y_pred_samp <- predict.gam(gam.gpt4.samp, d.tmp)
+    y_pred_samp <- as.numeric(y_pred_samp)
+    y_pred_samp <- y_pred_samp * sd(gam.gpt4.samp$y) + mean(gam.gpt4.samp$y)
+    if (sum(abs(y[1:5] - y_pred_orig[1:5])) < sum(abs(y[1:5] - y_pred_samp[1:5]))) {
+        count.00 <- count.00 + 1
+    } else {
+        count.01 <- count.01 + 1
+    }
+}
+
+d.gpt4.samp <- add_sid(d.gpt4.samp)
+count.10 <- 0
+count.11 <- 0
+for (i in unique(d.gpt4.samp$sid)) {
+    d.tmp <- d.gpt4.samp[sid == i]
+    y <- d.gpt4.samp[sid == i]$power
+    y_pred_samp <- predict.gam(gam.gpt4.samp, d.tmp)
+    y_pred_samp <- as.numeric(y_pred_samp)
+    y_pred_samp <- y_pred_samp * sd(gam.gpt4.samp$y) + mean(gam.gpt4.samp$y)
+    y_pred_orig <- predict.gam(gam.gpt4.orig, d.tmp)
+    y_pred_orig <- as.numeric(y_pred_orig)
+    y_pred_orig <- y_pred_orig * sd(gam.gpt4.orig$y) + mean(gam.gpt4.orig$y)
+    if (sum(abs(y[1:5] - y_pred_orig[1:5])) < sum(abs(y[1:5] - y_pred_samp[1:5]))) {
+        count.10 <- count.10 + 1
+    } else {
+        count.11 <- count.11 + 1
+    }
+}
+
+acc <- (count.00 + count.11) / (count.00 + count.01 + count.10 + count.11)

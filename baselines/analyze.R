@@ -2,6 +2,15 @@ require("data.table")
 require("stringr")
 require("readr")
 
+# Add sequence ID
+add_sid <- function(dt) {
+    dt[, freq2 := shift(freq, 1, type="lead", fill=0.5)]
+    dt$diffSeries <- dt$freq > dt$freq2
+    dt$sid <- cumsum(dt$diffSeries)
+    dt$sid <- shift(dt$sid, 1, type="lag", fill=0)
+    dt
+}
+
 # The function for reading nll.txt files
 read_nll_like_file <- function(file_path) {
     read_lines(file_path) %>%
@@ -89,6 +98,7 @@ t.test(fftnorm.gpt4.orig[freq==0,power], fftnorm.gpt4.samp[freq==0,power]) # Not
 t.test(fftnorm.gpt4.orig[between(freq, 0, 0.01),power],
        fftnorm.gpt4.samp[between(freq, 0, 0.01),power]) # Distinguishable
 # t = -2.1774, df = 597.3, p-value = 0.02984
+# gpt4.orig < gpt4.samp in terms of power near 0
 
 t.test(fftnorm.gpt4.orig[between(freq, 0.01, 0.02),power], 
        fftnorm.gpt4.samp[between(freq, 0.01, 0.02),power]) #ND 
@@ -105,3 +115,23 @@ p <- ggplot(fftnorm.gpt4[between(freq, 0, 0.01),], aes(power, fill=type)) +
     ggtitle("Human vs. GPT-4 (0-0.01)") +
     labs(x = "FFT Normalzied Power", y = "Density")
 ggsave("gpt4_human_writing_fftnormdistr_0-0.01_unigram_mincount=3.pdf", plot=p, width=5, height=5)
+
+
+# Try fitting linear models
+# No, linear model is not working for unigram data
+lm.gpt4.orig <- lm(power ~ freq, data = fftnorm.gpt4.orig[freq>0])
+lm.gpt4.samp <- lm(power ~ freq, data = fftnorm.gpt4.samp[freq>0])
+summary(lm.gpt4.orig)
+
+# Plot the fitted lines with points
+p <- ggplot(fftnorm.gpt4, aes(freq, power, color=type)) +
+    geom_point() +
+    geom_abline(intercept=coef(lm.gpt4.orig)[1], slope=coef(lm.gpt4.orig)[2], linetype="dashed") +
+    geom_abline(intercept=coef(lm.gpt4.samp)[1], slope=coef(lm.gpt4.samp)[2], linetype="dashed") +
+    theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
+    ggtitle("Human vs. GPT-4") +
+    labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
+ggsave("gpt4_human_writing_fftnorm_lm_unigram_mincount=3.pdf", plot=p, width=5, height=5)
+
+gpt4.orig.intercept <- coef(lm.gpt4.orig)[1]
+gpt4.samp.intercept <- coef(lm.gpt4.samp)[1]
