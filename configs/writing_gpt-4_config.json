@@ -1,6 +1,6 @@
 {
     "args": [
-        "--est_model", "/data1/model/mistral-7b-base/",
+        "--model_est", "/data1/model/mistral-7b-base/",
         "--thread", 4,
 
         "--data", "./data/gpt-4/writing_gpt-4.raw_data.txt",

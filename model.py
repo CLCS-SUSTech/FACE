@@ -36,15 +36,17 @@ class Model(object):
         output_texts = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         return output_texts
         
-    def forward(self, input_text: str, max_len=1024) -> torch.Tensor:
+    def forward(self, input_text: str, max_len=1024, return_tokens=False) -> torch.Tensor:
         token_ids = self.tokenizer(input_text, return_tensors='pt')['input_ids'] # shape: [1, L]
         max_len = min(token_ids.shape[1], max_len)
         inputs = token_ids[:, :max_len].cuda(self.device)
         logits = self.model(inputs)['logits'][0].cpu().to(torch.float32)
         probs = F.softmax(logits, dim=-1) # shape: [L, V]
-        nlls = torch.zeros(probs.shape[0], dtype=torch.float32)
-        for i in range(probs.shape[0]):
-            nlls[i] = -torch.log(probs[i, token_ids[0, i]])
+        nlls = torch.zeros(probs.shape[0]-1, dtype=torch.float32) # NLLs for position i from 1 to L
+        for i in range(probs.shape[0] - 1): # probs[i] is the probability distribution of the (i+1)th token, i.e., P(token[i+1] | history)
+            nlls[i] = -torch.log(probs[i, token_ids[0, i+1]]) # NLL[i] = -log P(token[i+1] | history)
+        if return_tokens:
+            return logits, nlls, token_ids
         return logits, nlls
     
     def forward_batch(self, input_text: list[str], max_len=1024) -> torch.Tensor:

@@ -111,12 +111,12 @@ def process(model, tokenizer, args):
 
 
 @torch.no_grad()
-def process_config(args):
+def process_custom(args):
     """
     For custom models specified in configuration file
     """
     # Load model and data
-    model = Model(args.est_model)
+    model = Model(args.model_est)
     with open(args.input, 'r') as f:
         data = [line.strip() for line in f.readlines()]
     # Compute
@@ -137,8 +137,8 @@ if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
     if args.config is not None:
-        args = load_config()
-        process_config(args)
+        args = load_config(args)
+        process_custom(args)
     else:
         model, tokenizer = load_model(args)
         process(model, tokenizer, args)
