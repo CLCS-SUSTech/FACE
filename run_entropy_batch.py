@@ -7,17 +7,15 @@ from tqdm import tqdm
 import torch.nn as nn
 from einops import rearrange
 import numpy as np
+from model import Model
 
 
 def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', '-i', type=str, default='', 
                         help='input file', required=True)
-    parser.add_argument('--output',
-                        '-o',
-                        type=str,
-                        default='',
-                        help='output file')
+    parser.add_argument('--output','-o', type=str, default='',
+                        help='output file', required=True)
     parser.add_argument(
         '--model',
         type=str,
@@ -27,7 +25,8 @@ def create_parser():
         'if specified, this model will be used for estimating the entropy \
             (negative log-likelihood output) in replace of the default models'
     )
-    parser.add_argument('--model_path', type=str, default='', help='load model locally if specified')
+    parser.add_argument('--model_path', type=str, default='', 
+                        help='load custom models specified by the path')
     parser.add_argument('--batch_size', '-bs', type=int, default=32)
     parser.add_argument('--start_batch', type=int, default=0)
     return parser
@@ -57,6 +56,9 @@ def load_model(args):
 
 @torch.no_grad()
 def process(model, tokenizer, args):
+    """
+    For pretrained models from Huggingface transformers 
+    """
     device = model.device
     print(f'model is on device: {device}')
     criterian = nn.NLLLoss(reduction='none')
@@ -64,19 +66,11 @@ def process(model, tokenizer, args):
 
     with open(args.input, 'r') as fr:
         data = [line.strip() for line in fr.readlines()]
-        if len(args.output) > 0:
-            output_file = args.output
-        else:
-            if args.model_path:
-                model_name = os.path.basename(args.model_path)
-                output_file = f'{args.input}.model={model_name}.nll'
-            else:
-                output_file = f'{args.input}.model={args.model}.nll'
-
     num_batches = len(data) // args.batch_size
     if len(data) % args.batch_size > 0:
         num_batches += 1
-    with open(output_file, 'w') as fw:
+
+    with open(args.output, 'w') as fw:
         for i in tqdm(range(args.start_batch, num_batches)):
             batch = data[i*args.batch_size: (i*args.batch_size+args.batch_size)]
             if len(batch) == 0:
@@ -111,8 +105,38 @@ def process(model, tokenizer, args):
                 fw.write(f'{res_str}\n')
 
 
+@torch.no_grad()
+def process_custom(args):
+    """
+    For custom models
+    """
+    model = Model(args.model_path)
+
+    with open(args.input, 'r') as fr:
+        data = [line.strip() for line in fr.readlines()]
+    num_batches = len(data) // args.batch_size
+    if len(data) % args.batch_size > 0:
+        num_batches += 1
+    
+    with open(args.output, 'w') as fw:
+        for i in tqdm(range(args.start_batch, num_batches)):
+            batch = data[i*args.batch_size: (i*args.batch_size+args.batch_size)]
+            if len(batch) == 0:
+                continue 
+            try:
+                res = model.forward_batch(batch)
+            except Exception:
+                print(f'batch index: {i}')
+                # print(f'batch: {batch}')
+                raise
+            #todo: implement batch nll calculation
+
+
 if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
-    model, tokenizer = load_model(args)
-    process(model, tokenizer, args)
+    if args.model_path:
+        pass
+    else:
+        model, tokenizer = load_model(args)
+        process(model, tokenizer, args)

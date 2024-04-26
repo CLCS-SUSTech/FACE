@@ -8,6 +8,7 @@ import torch.nn as nn
 import numpy as np
 from einops import rearrange
 from config import load_config
+from model import Model
 
 
 def create_parser():
@@ -18,7 +19,7 @@ def create_parser():
                         '-o',
                         type=str,
                         default='',
-                        help='output file')
+                        help='output file', required=True)
     parser.add_argument(
         '--model',
         type=str,
@@ -69,16 +70,7 @@ def process(model, tokenizer, args):
 
     with open(args.input, 'r') as fr:
         data = [line.strip() for line in fr.readlines()]
-    if len(args.output) > 0:
-        output_file = args.output
-    else:
-        if args.model_path:
-            model_name = os.path.basename(args.model_path)
-            output_file = f'{args.input}.model={model_name}.nll'
-        else:
-            output_file = f'{args.input}.model={args.model}.nll'
-
-    with open(output_file, 'w') as fw:
+    with open(args.output, 'w') as fw:
         for line in tqdm(data):
             encoded_input = tokenizer(line,
                                       max_length=1024,
@@ -118,15 +110,27 @@ def process(model, tokenizer, args):
                 fw.write(f'{res_str}\n')
 
 
-def run_from_config(args):
-    from model import ModelNoPrompt
-    model = ModelNoPrompt(args.model_est)
-    json_data = json.loads(open(args.data, "r").read())
-    text_data = json_data["original"]
+@torch.no_grad()
+def process_config(args):
+    """
+    For custom models specified in configuration file
+    """
+    # Load model and data
+    model = Model(args.est_model)
+    with open(args.input, 'r') as f:
+        data = [line.strip() for line in f.readlines()]
+    # Compute
     results = []
-    for text in tqdm(text_data):
-        probs = model.forward(text)
-        results.append(-torch.log(probs).numpy().tolist())
+    for line in tqdm(data):
+        logits, nlls = model.forward(line)
+        results.append(nlls)
+    # Write results
+    with open(args.output, 'w') as f:
+        for res in results:
+            if isinstance(res, torch.Tensor):
+                res = res.numpy().tolist()
+            res_str = ' '.join(f'{num:.4f}' for num in res)
+            f.write(f'{res_str}\n')
 
 
 if __name__ == "__main__":
@@ -134,7 +138,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.config is not None:
         args = load_config()
-        run_from_config(args)
+        process_config(args)
     else:
         model, tokenizer = load_model(args)
         process(model, tokenizer, args)

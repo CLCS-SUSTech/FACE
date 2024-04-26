@@ -111,6 +111,7 @@ p <- ggplot(pred.all, aes(x, y)) +
 ggsave("gam_all_human_writing_fftnorm.pdf", plot=p, width=5, height=5)
 
 
+
 # Measure distance between predicted y (power) and ground truth
 # human => 0, model => 1
 d.gpt4.orig <- add_sid(d.gpt4.orig)
@@ -150,5 +151,5 @@ for (i in unique(d.gpt4.samp$sid)) {
         count.11 <- count.11 + 1
     }
 }
-
 acc <- (count.00 + count.11) / (count.00 + count.01 + count.10 + count.11)
+# 以上实验证明，简单的欧式距离是不够的，需要 overlap based, 比如 FACE-SO  
