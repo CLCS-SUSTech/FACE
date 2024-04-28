@@ -69,15 +69,22 @@ def fft_pipeline(data_file, method, n_samples=np.inf, normalize=False) -> pd.Dat
     """
     data_list = _read_data(data_file)
     data_arr = np.concatenate([np.asarray(d) for d in data_list])
-    mean_data = np.mean(data_arr)
-    sd_data = np.std(data_arr)
+    global_mean = np.mean(data_arr)
+    global_sd = np.std(data_arr)
 
     if n_samples < np.inf:
         data = [np.asarray(d) for d in data_list[:n_samples]]
     else:
         data = [np.asarray(d) for d in data_list]
     if normalize:
-        data = [(d - mean_data)/sd_data for d in data]
+        data_norm = []
+        epsion = 1e-6
+        for d in data:
+            d_mean = np.mean(d)
+            sd_mean = np.std(d)
+            d_norm = (d - d_mean) / (sd_mean + epsion)
+            data_norm.append(d_norm)
+        data = data_norm
 
     if method == 'periodogram':
         freqs, powers = compute_periodogram(data)

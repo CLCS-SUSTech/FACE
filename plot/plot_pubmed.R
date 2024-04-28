@@ -16,8 +16,8 @@ add_sid <- function(dt) {
 # Mistral as estimator
 ##
 # GPT-4
-d.gpt4.orig <- fread("../data/gpt-4/pubmed_gpt-4.original.mistral.fft.txt")
-d.gpt4.samp <- fread("../data/gpt-4/pubmed_gpt-4.sampled.mistral.fft.txt")
+d.gpt4.orig <- fread("../data/gpt-4/pubmed_gpt-4.original.mistral.fftnorm.txt")
+d.gpt4.samp <- fread("../data/gpt-4/pubmed_gpt-4.sampled.mistral.fftnorm.txt")
 d.gpt4.orig <- add_sid(d.gpt4.orig)
 d.gpt4.samp <- add_sid(d.gpt4.samp)
 d.gpt4.orig$type <- "Human"
@@ -29,7 +29,7 @@ p <- ggplot(d.gpt4, aes(freq, power, color=type)) +
     theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
     ggtitle("PubMed: Human vs. GPT-4") +
     labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
-ggsave("gpt4_human_pubmed_mistral.pdf", plot=p, width=5, height=5)
+ggsave("gpt4_human_pubmed_mistral_norm.pdf", plot=p, width=5, height=5)
 
 # GPT3.5
 d.gpt3.5.orig <- fread("../data/gpt-3.5/pubmed_gpt-3.5-turbo.original.mistral.fftnorm.txt")
@@ -48,8 +48,8 @@ p <- ggplot(d.gpt3.5, aes(freq, power, color=type)) +
 ggsave("gpt3.5_human_pubmed_mistral_norm.pdf", plot=p, width=5, height=5)
 
 # Davinci
-d.davinci.orig <- fread("../data/davinci/pubmed_davinci.original.mistral.fft.txt")
-d.davinci.samp <- fread("../data/davinci/pubmed_davinci.sampled.mistral.fft.txt")
+d.davinci.orig <- fread("../data/davinci/pubmed_davinci.original.mistral.fftnorm.txt")
+d.davinci.samp <- fread("../data/davinci/pubmed_davinci.sampled.mistral.fftnorm.txt")
 d.davinci.orig <- add_sid(d.davinci.orig)
 d.davinci.samp <- add_sid(d.davinci.samp)
 d.davinci.orig$type <- "Human"
@@ -61,7 +61,7 @@ p <- ggplot(d.davinci, aes(freq, power, color=type)) +
     theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
     ggtitle("PubMed: Human vs. Davinci") +
     labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
-ggsave("davinci_human_pubmed_mistral.pdf", plot=p, width=5, height=5)
+ggsave("davinci_human_pubmed_mistral_norm.pdf", plot=p, width=5, height=5)
 
 
 ##
