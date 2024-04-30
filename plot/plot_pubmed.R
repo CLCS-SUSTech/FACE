@@ -8,7 +8,7 @@ add_sid <- function(dt) {
   dt$diffSeries <- dt$freq > dt$freq2
   dt$sid <- cumsum(dt$diffSeries)
   dt$sid <- shift(dt$sid, 1, type="lag", fill=0)
-  dt
+  dt[, .(freq, power, sid)]
 }
 
 
@@ -82,3 +82,19 @@ p <- ggplot(d.gpt4, aes(freq, power, color=type)) +
     ggtitle("PubMed: Human vs. GPT-4 \n(estimated w/ GPT2xl)") +
     labs(x = bquote(omega[k]), y = bquote(X(omega[k])))
 ggsave("gpt4_human_pubmed_gpt2xl.pdf", plot=p, width=5, height=5)
+
+
+
+###
+# Distributions of spectral power, especially over the lower 15% of spectrum
+###
+
+# GPT-4
+lower_freq_ratio <- 0.15
+pow.gpt4 <- d.gpt4[freq <= lower_freq_ratio * 0.5, .(power, sid, type)]
+p <- ggplot(pow.gpt4, aes(log(abs(power) + 1), fill=type)) +
+    geom_density(alpha=0.5) +
+    theme_bw() + theme(plot.title = element_text(hjust = 0.5, vjust=-8, size = 12)) +
+    ggtitle("PubMed: Human vs. GPT-4 \n(estimated w/ Mistral)") +
+    labs(x = "Power", y = "Density")
+ggsave("gpt4_human_pubmed_mistral_norm_density(lower0.15).pdf", plot=p, width=5, height=5)
