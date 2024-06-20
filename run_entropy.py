@@ -8,22 +8,17 @@ import torch.nn as nn
 import numpy as np
 from einops import rearrange
 from config import load_config
-from model import Model
+from model import CustomModel
 
 
 def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', '-i', type=str, default='', 
                         help='input file', required=True)
-    parser.add_argument('--output',
-                        '-o',
-                        type=str,
-                        default='',
+    parser.add_argument('--output', '-o', type=str, default='',
                         help='output file', required=True)
     parser.add_argument(
-        '--model',
-        type=str,
-        default='gpt2',
+        '--model', type=str, default='gpt2',
         choices=['gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'],
         help=
         'if specified, this model will be used for estimating the entropy \
@@ -116,13 +111,13 @@ def process_custom(args):
     For custom models specified in configuration file
     """
     # Load model and data
-    model = Model(args.model_est)
+    model = CustomModel(args.model_path)
     with open(args.input, 'r') as f:
         data = [line.strip() for line in f.readlines()]
     # Compute
     results = []
     for line in tqdm(data):
-        logits, nlls = model.forward(line)
+        _, nlls = model.forward(line)
         results.append(nlls)
     # Write results
     with open(args.output, 'w') as f:

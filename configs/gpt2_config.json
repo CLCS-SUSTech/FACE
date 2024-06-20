@@ -1,0 +1,5 @@
+{
+    "args": [
+        "--model_path", "/data1/model/gpt2"
+    ]
+}

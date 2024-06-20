@@ -8,7 +8,7 @@ def get_device_map(device: int):
         return "auto"
     return device
 
-class Model(object):
+class CustomModel(object):
     def __init__(self, model_dir, device=0):
         self.device = get_device_map(device)
 
@@ -48,10 +48,3 @@ class Model(object):
         if return_tokens:
             return logits, nlls, token_ids
         return logits, nlls
-    
-    def forward_batch(self, input_text: list[str], max_len=1024) -> torch.Tensor:
-        token_ids = self.tokenizer(input_text, return_tensors='pt')['input_ids'] # shape: [B, L]
-        max_len = min(token_ids.shape[1], max_len)
-        inputs = token_ids[:, :max_len].cuda(self.device)
-        logits = self.model(inputs)['logits'].cpu().to(torch.float32)
-        #todo: implement batch nll calculation
