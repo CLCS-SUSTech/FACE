@@ -12,8 +12,8 @@ def sample_text(jsonl_file, n_samples, remove_newline=True):
 
 N = 1000
 human_text = []
-human_text.extend(sample_text('human/webtext.test.jsonl', N//2))
-human_text.extend(sample_text('human/webtext.valid.jsonl', N//2))
+human_text.extend(sample_text('webtext/webtext.test.jsonl', N//2))
+human_text.extend(sample_text('webtext/webtext.valid.jsonl', N//2))
 with open('demo_human.txt', 'w') as fw:
     fw.write('\n'.join(human_text))
 
